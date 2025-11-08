@@ -1,3 +1,4 @@
+// App.js
 import React, { useState } from 'react';
 import axios from 'axios';
 import 'bootstrap/dist/css/bootstrap.min.css';
@@ -10,15 +11,14 @@ function App() {
     po_no: '',
     invoice_date: '',
     vat_date: '',
-    vat: 0,   // Manual entry
-    wht: 0,   // Manual entry
+    vat: 0,
+    wht: 0,
     items: [{ description: '', unit: '', qty: 1, unit_rate: 0 }]
   };
 
   const [invoice, setInvoice] = useState(initialInvoice);
   const [savedInvoice, setSavedInvoice] = useState(null);
 
-  // Handle change (both invoice & items)
   const handleChange = (e, index = null, field = null) => {
     if (index !== null && field !== null) {
       const newItems = [...invoice.items];
@@ -44,7 +44,13 @@ function App() {
   const calculateTotal = () =>
     invoice.items.reduce((acc, item) => acc + item.qty * item.unit_rate, 0);
 
-  // Save to backend
+  const grandTotal = () => {
+    const total = calculateTotal();
+    const vat = parseFloat(invoice.vat || 0);
+    const wht = parseFloat(invoice.wht || 0);
+    return total + vat - wht;
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
@@ -57,7 +63,6 @@ function App() {
     }
   };
 
-  // Download PDF or DOCX
   const handleDownload = async (type) => {
     if (!savedInvoice) return;
     try {
@@ -79,15 +84,8 @@ function App() {
     setSavedInvoice(null);
   };
 
-  const grandTotal = () => {
-    const total = calculateTotal();
-    const vat = parseFloat(invoice.vat || 0);
-    const wht = parseFloat(invoice.wht || 0);
-    return total + vat - wht;
-  };
-
   return (
-    <div className="container mt-5">
+    <div className="container my-5">
       <div className="card shadow">
         <div className="card-header bg-primary text-white d-flex justify-content-between align-items-center">
           <h2 className="mb-0">Create Invoice</h2>
@@ -95,8 +93,9 @@ function App() {
         </div>
         <div className="card-body">
           <form onSubmit={handleSubmit}>
-            <div className="row mb-3">
-              <div className="col">
+            {/* Customer Info */}
+            <div className="row g-3 mb-3">
+              <div className="col-12 col-md-6">
                 <label className="form-label">Customer Name</label>
                 <input
                   type="text"
@@ -107,7 +106,7 @@ function App() {
                   required
                 />
               </div>
-              <div className="col">
+              <div className="col-12 col-md-6">
                 <label className="form-label">Contract No</label>
                 <input
                   type="text"
@@ -117,10 +116,7 @@ function App() {
                   onChange={handleChange}
                 />
               </div>
-            </div>
-
-            <div className="row mb-3">
-              <div className="col">
+              <div className="col-12 col-md-6">
                 <label className="form-label">Customer Address</label>
                 <input
                   type="text"
@@ -130,7 +126,7 @@ function App() {
                   onChange={handleChange}
                 />
               </div>
-              <div className="col">
+              <div className="col-12 col-md-6">
                 <label className="form-label">PO No</label>
                 <input
                   type="text"
@@ -140,10 +136,7 @@ function App() {
                   onChange={handleChange}
                 />
               </div>
-            </div>
-
-            <div className="row mb-3">
-              <div className="col">
+              <div className="col-12 col-md-6">
                 <label className="form-label">Invoice Date</label>
                 <input
                   type="date"
@@ -153,7 +146,7 @@ function App() {
                   onChange={handleChange}
                 />
               </div>
-              <div className="col">
+              <div className="col-12 col-md-6">
                 <label className="form-label">VAT Date</label>
                 <input
                   type="date"
@@ -165,122 +158,114 @@ function App() {
               </div>
             </div>
 
+            {/* Items Table */}
             <h4 className="mt-4">Items</h4>
-            <table className="table table-bordered">
-              <thead className="table-light">
-                <tr>
-                  <th>Description</th>
-                  <th>Unit</th>
-                  <th>Qty</th>
-                  <th>Unit Rate (₦)</th>
-                  <th>Amount (₦)</th>
-                  <th>Action</th>
-                </tr>
-              </thead>
-              <tbody>
-                {invoice.items.map((item, index) => (
-                  <tr key={index}>
-                    <td>
-                      <input
-                        type="text"
-                        className="form-control"
-                        value={item.description}
-                        onChange={(e) => handleChange(e, index, 'description')}
-                      />
-                    </td>
-                    <td>
-                      <input
-                        type="text"
-                        className="form-control"
-                        value={item.unit}
-                        onChange={(e) => handleChange(e, index, 'unit')}
-                      />
-                    </td>
-                    <td>
-                      <input
-                        type="number"
-                        className="form-control"
-                        value={item.qty}
-                        onChange={(e) => handleChange(e, index, 'qty')}
-                      />
-                    </td>
-                    <td>
-                      <input
-                        type="number"
-                        className="form-control"
-                        value={item.unit_rate}
-                        onChange={(e) => handleChange(e, index, 'unit_rate')}
-                      />
-                    </td>
-                    <td>₦{(item.qty * item.unit_rate).toLocaleString()}</td>
-                    <td>
-                      <button
-                        type="button"
-                        className="btn btn-danger btn-sm"
-                        onClick={() => removeItem(index)}
-                      >
-                        Remove
-                      </button>
-                    </td>
+            <div className="table-responsive">
+              <table className="table table-bordered align-middle">
+                <thead className="table-light">
+                  <tr>
+                    <th>Description</th>
+                    <th>Unit</th>
+                    <th>Qty</th>
+                    <th>Unit Rate (₦)</th>
+                    <th>Amount (₦)</th>
+                    <th>Action</th>
                   </tr>
-                ))}
-              </tbody>
-              <tfoot>
-                <tr>
-                  <td colSpan="4" className="text-end">
-                    <strong>WHT (₦):</strong>
-                  </td>
-                  <td colSpan="2">
-                    <input
-                      type="number"
-                      className="form-control"
-                      name="wht"
-                      value={invoice.wht}
-                      onChange={handleChange}
-                    />
-                  </td>
-                </tr>
-                <tr>
-                  <td colSpan="4" className="text-end">
-                    <strong>VAT (₦):</strong>
-                  </td>
-                  <td colSpan="2">
-                    <input
-                      type="number"
-                      className="form-control"
-                      name="vat"
-                      value={invoice.vat}
-                      onChange={handleChange}
-                    />
-                  </td>
-                </tr>
-                <tr>
-                  <td colSpan="4" className="text-end">
-                    <strong>Grand Total:</strong>
-                  </td>
-                  <td colSpan="2">
-                    <strong>₦{grandTotal().toLocaleString()}</strong>
-                  </td>
-                </tr>
-              </tfoot>
-            </table>
+                </thead>
+                <tbody>
+                  {invoice.items.map((item, index) => (
+                    <tr key={index}>
+                      <td>
+                        <input
+                          type="text"
+                          className="form-control"
+                          value={item.description}
+                          onChange={(e) => handleChange(e, index, 'description')}
+                        />
+                      </td>
+                      <td>
+                        <input
+                          type="text"
+                          className="form-control"
+                          value={item.unit}
+                          onChange={(e) => handleChange(e, index, 'unit')}
+                        />
+                      </td>
+                      <td>
+                        <input
+                          type="number"
+                          className="form-control"
+                          value={item.qty}
+                          onChange={(e) => handleChange(e, index, 'qty')}
+                        />
+                      </td>
+                      <td>
+                        <input
+                          type="number"
+                          className="form-control"
+                          value={item.unit_rate}
+                          onChange={(e) => handleChange(e, index, 'unit_rate')}
+                        />
+                      </td>
+                      <td>₦{(item.qty * item.unit_rate).toLocaleString()}</td>
+                      <td>
+                        <button
+                          type="button"
+                          className="btn btn-danger btn-sm"
+                          onClick={() => removeItem(index)}
+                        >
+                          Remove
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
 
-            <div className="mt-3">
-              <button type="button" className="btn btn-secondary me-2" onClick={addItem}>
+            {/* WHT, VAT, Grand Total */}
+            <div className="row g-3 mt-2">
+              <div className="col-12 col-md-4">
+                <label className="form-label">WHT (₦)</label>
+                <input
+                  type="number"
+                  className="form-control"
+                  name="wht"
+                  value={invoice.wht}
+                  onChange={handleChange}
+                />
+              </div>
+              <div className="col-12 col-md-4">
+                <label className="form-label">VAT (₦)</label>
+                <input
+                  type="number"
+                  className="form-control"
+                  name="vat"
+                  value={invoice.vat}
+                  onChange={handleChange}
+                />
+              </div>
+              <div className="col-12 col-md-4 d-flex align-items-end">
+                <h5 className="mb-0">Grand Total: ₦{grandTotal().toLocaleString()}</h5>
+              </div>
+            </div>
+
+            {/* Buttons */}
+            <div className="mt-3 d-flex flex-wrap gap-2">
+              <button type="button" className="btn btn-secondary" onClick={addItem}>
                 Add Item
               </button>
-              <button type="submit" className="btn btn-primary me-2">
+              <button type="submit" className="btn btn-primary">
                 Save Invoice
               </button>
-              <button type="button" className="btn btn-warning me-2" onClick={resetForm}>
+              <button type="button" className="btn btn-warning" onClick={resetForm}>
                 New Invoice
               </button>
-
               {savedInvoice && (
                 <>
                   <button
                     type="button"
-                    className="btn btn-success me-2"
+                    className="btn btn-success"
                     onClick={() => handleDownload('pdf')}
                   >
                     Download PDF
