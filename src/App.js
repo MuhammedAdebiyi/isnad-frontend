@@ -1,10 +1,11 @@
-// App.js
 import React, { useState } from 'react';
 import axios from 'axios';
 import 'bootstrap/dist/css/bootstrap.min.css';
+import InvoiceList from './InvoiceList'; // Make sure this path is correct
 
 function App() {
   const initialInvoice = {
+    id: null,
     customer_name: '',
     customer_address: '',
     contract_no: '',
@@ -54,14 +55,28 @@ function App() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      const res = await axios.post(
-        'https://isnad-backend-1.onrender.com/api/invoices/create/',
-        invoice
-      );
+      let res;
+      if (invoice.id) {
+        // Update existing invoice
+        res = await axios.put(
+          `https://isnad-backend-1.onrender.com/api/invoices/${invoice.id}/update/`,
+          invoice,
+          { withCredentials: true }
+        );
+      } else {
+        // Create new invoice
+        res = await axios.post(
+          'https://isnad-backend-1.onrender.com/api/invoices/create/',
+          invoice,
+          { withCredentials: true }
+        );
+      }
+
       alert(`Invoice ${res.data.invoice_no} saved!`);
       setSavedInvoice({ id: res.data.invoice_id, invoice_no: res.data.invoice_no });
+      setInvoice(initialInvoice);
     } catch (err) {
-      console.error(err);
+      console.error(err.response || err);
       alert('Error saving invoice');
     }
   };
@@ -69,15 +84,19 @@ function App() {
   const handleDownload = async (type) => {
     if (!savedInvoice) return;
     try {
-      const url = `https://isnad-backend-1.onrender.com/api/invoices/${savedInvoice.id}/download-${type}/`;
-      const res = await axios.get(url, { responseType: 'blob' });
+      const res = await axios.get(
+        `https://isnad-backend-1.onrender.com/api/invoices/${savedInvoice.id}/download-${type}/`,
+        { responseType: 'blob', withCredentials: true }
+      );
+      const url = window.URL.createObjectURL(new Blob([res.data]));
       const link = document.createElement('a');
-      link.href = window.URL.createObjectURL(new Blob([res.data]));
+      link.href = url;
       link.setAttribute('download', `${savedInvoice.invoice_no}.${type}`);
       document.body.appendChild(link);
       link.click();
+      link.remove();
     } catch (err) {
-      console.error(err);
+      console.error(err.response || err);
       alert(`Error downloading ${type.toUpperCase()}`);
     }
   };
@@ -87,11 +106,29 @@ function App() {
     setSavedInvoice(null);
   };
 
+  // Pre-fill form when editing an invoice from the list
+  const handleEditInvoice = (inv) => {
+    setInvoice({
+      id: inv.id,
+      customer_name: inv.customer_name,
+      customer_address: inv.customer_address,
+      contract_no: inv.contract_no,
+      po_no: inv.po_no,
+      invoice_date: inv.invoice_date,
+      vat_date: inv.vat_date,
+      vat: inv.vat,
+      wht: inv.wht,
+      items: inv.items.length ? inv.items : [{ description: '', unit: '', qty: 1, unit_rate: 0 }]
+    });
+    setSavedInvoice({ id: inv.id, invoice_no: inv.invoice_no });
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
   return (
     <div className="container my-5">
-      <div className="card shadow">
+      <div className="card shadow mb-5">
         <div className="card-header bg-primary text-white d-flex justify-content-between align-items-center">
-          <h2 className="mb-0">Create Invoice</h2>
+          <h2 className="mb-0">{invoice.id ? 'Edit Invoice' : 'Create Invoice'}</h2>
           {savedInvoice && <h5 className="mb-0">Invoice No: {savedInvoice.invoice_no}</h5>}
         </div>
         <div className="card-body">
@@ -259,7 +296,7 @@ function App() {
                 Add Item
               </button>
               <button type="submit" className="btn btn-primary">
-                Save Invoice
+                {invoice.id ? 'Update Invoice' : 'Save Invoice'}
               </button>
               <button type="button" className="btn btn-warning" onClick={resetForm}>
                 New Invoice
@@ -286,6 +323,9 @@ function App() {
           </form>
         </div>
       </div>
+
+      {/* Invoice List */}
+      <InvoiceList onEditInvoice={handleEditInvoice} />
     </div>
   );
 }

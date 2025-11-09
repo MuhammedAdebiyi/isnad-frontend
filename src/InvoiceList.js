@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 
-function InvoiceList() {
+function InvoiceList({ onEditInvoice }) {
   const [invoices, setInvoices] = useState([]);
   const [filters, setFilters] = useState({
     customer_name: '',
@@ -15,16 +15,19 @@ function InvoiceList() {
     const fetchInvoices = async () => {
       try {
         const query = new URLSearchParams(filters).toString();
-        const res = await axios.get(`https://isnad-backend-1.onrender.com/api/invoices/?${query}`);
+        const res = await axios.get(
+          `https://isnad-backend-1.onrender.com/api/invoices/?${query}`,
+          { withCredentials: true }
+        );
         setInvoices(res.data);
       } catch (err) {
-        console.error(err);
+        console.error(err.response || err);
         alert('Error fetching invoices');
       }
     };
 
     fetchInvoices();
-  }, [filters]); // re-run whenever filters state changes
+  }, [filters]);
 
   const handleFilterChange = (e) => {
     setFilters({ ...filters, [e.target.name]: e.target.value });
@@ -33,25 +36,34 @@ function InvoiceList() {
   const handleDelete = async (id) => {
     if (!window.confirm('Are you sure you want to delete this invoice?')) return;
     try {
-      await axios.delete(`http://isnad-backend-1.onrender.com/api/invoices/${id}/delete/`);
+      await axios.delete(
+        `https://isnad-backend-1.onrender.com/api/invoices/${id}/delete/`,
+        { withCredentials: true }
+      );
       setInvoices(invoices.filter(inv => inv.id !== id));
     } catch (err) {
-      console.error(err);
+      console.error(err.response || err);
       alert('Error deleting invoice');
     }
   };
 
-  const handleDownload = (id, type) => {
-    axios.get(`http://isnad-backend-1.onrender.com/api/invoices/${id}/download-${type}/`, { responseType: 'blob' })
-      .then(res => {
-        const url = window.URL.createObjectURL(new Blob([res.data]));
-        const link = document.createElement('a');
-        link.href = url;
-        link.setAttribute('download', `invoice.${type}`);
-        document.body.appendChild(link);
-        link.click();
-      })
-      .catch(err => console.error(err));
+  const handleDownload = async (id, type) => {
+    try {
+      const res = await axios.get(
+        `https://isnad-backend-1.onrender.com/api/invoices/${id}/download-${type}/`,
+        { responseType: 'blob', withCredentials: true }
+      );
+      const url = window.URL.createObjectURL(new Blob([res.data]));
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', `invoice.${type}`);
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+    } catch (err) {
+      console.error(err.response || err);
+      alert(`Error downloading ${type.toUpperCase()}`);
+    }
   };
 
   return (
@@ -130,7 +142,7 @@ function InvoiceList() {
                 <td>
                   <button className="btn btn-success btn-sm me-1" onClick={() => handleDownload(inv.id, 'pdf')}>PDF</button>
                   <button className="btn btn-info btn-sm text-white me-1" onClick={() => handleDownload(inv.id, 'docx')}>DOCX</button>
-                  <button className="btn btn-warning btn-sm me-1">Edit</button>
+                  <button className="btn btn-warning btn-sm me-1" onClick={() => onEditInvoice(inv)}>Edit</button>
                   <button className="btn btn-danger btn-sm" onClick={() => handleDelete(inv.id)}>Delete</button>
                 </td>
               </tr>
