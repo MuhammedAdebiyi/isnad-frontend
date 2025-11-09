@@ -54,7 +54,7 @@ function App() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      const res = await axios.post('http://127.0.0.1:8000/api/invoices/create/', invoice);
+      const res = await axios.post('http://isnad-backend-1.onrender.com/api/invoices/create/', invoice);
       alert(`Invoice ${res.data.invoice_no} saved!`);
       setSavedInvoice({ id: res.data.invoice_id, invoice_no: res.data.invoice_no });
     } catch (err) {
@@ -66,7 +66,7 @@ function App() {
   const handleDownload = async (type) => {
     if (!savedInvoice) return;
     try {
-      const url = `http://127.0.0.1:8000/api/invoices/${savedInvoice.id}/download-${type}/`;
+      const url = `http://isnad-backend-1.onrender.com/api/invoices/${savedInvoice.id}/download-${type}/`;
       const res = await axios.get(url, { responseType: 'blob' });
       const link = document.createElement('a');
       link.href = window.URL.createObjectURL(new Blob([res.data]));

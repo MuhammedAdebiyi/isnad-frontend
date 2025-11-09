@@ -15,7 +15,7 @@ function InvoiceList() {
     const fetchInvoices = async () => {
       try {
         const query = new URLSearchParams(filters).toString();
-        const res = await axios.get(`http://127.0.0.1:8000/api/invoices/?${query}`);
+        const res = await axios.get(`https://isnad-backend-1.onrender.com/api/invoices/?${query}`);
         setInvoices(res.data);
       } catch (err) {
         console.error(err);
@@ -33,7 +33,7 @@ function InvoiceList() {
   const handleDelete = async (id) => {
     if (!window.confirm('Are you sure you want to delete this invoice?')) return;
     try {
-      await axios.delete(`http://127.0.0.1:8000/api/invoices/${id}/delete/`);
+      await axios.delete(`http://isnad-backend-1.onrender.com/api/invoices/${id}/delete/`);
       setInvoices(invoices.filter(inv => inv.id !== id));
     } catch (err) {
       console.error(err);
@@ -42,7 +42,7 @@ function InvoiceList() {
   };
 
   const handleDownload = (id, type) => {
-    axios.get(`http://127.0.0.1:8000/api/invoices/${id}/download-${type}/`, { responseType: 'blob' })
+    axios.get(`http://isnad-backend-1.onrender.com/api/invoices/${id}/download-${type}/`, { responseType: 'blob' })
       .then(res => {
         const url = window.URL.createObjectURL(new Blob([res.data]));
         const link = document.createElement('a');
