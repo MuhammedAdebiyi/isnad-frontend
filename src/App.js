@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import axios from 'axios';
 import 'bootstrap/dist/css/bootstrap.min.css';
-import InvoiceList from './InvoiceList'; // Make sure this path is correct
+import InvoiceList from './InvoiceList'; 
 
 function App() {
   const initialInvoice = {
@@ -59,14 +59,14 @@ function App() {
       if (invoice.id) {
         // Update existing invoice
         res = await axios.put(
-          `https://isnad-backend-1.onrender.com/api/invoices/${invoice.id}/update/`,
+          `https://api.isnadinvoice.com.ng/api/invoices/${invoice.id}/update/`,
           invoice,
           { withCredentials: true }
         );
       } else {
         // Create new invoice
         res = await axios.post(
-          'https://isnad-backend-1.onrender.com/api/invoices/create/',
+          'https://api.isnadinvoice.com.ng/api/invoices/create/',
           invoice,
           { withCredentials: true }
         );
@@ -85,7 +85,7 @@ function App() {
     if (!savedInvoice) return;
     try {
       const res = await axios.get(
-        `https://isnad-backend-1.onrender.com/api/invoices/${savedInvoice.id}/download-${type}/`,
+        `https://api.isnadinvoice.com.ng/api/invoices/${savedInvoice.id}/download-${type}/`,
         { responseType: 'blob', withCredentials: true }
       );
       const url = window.URL.createObjectURL(new Blob([res.data]));

@@ -16,7 +16,7 @@ function InvoiceList({ onEditInvoice }) {
       try {
         const query = new URLSearchParams(filters).toString();
         const res = await axios.get(
-          `https://isnad-backend-1.onrender.com/api/invoices/?${query}`,
+          `https://api.isnadinvoice.com.ng/api/invoices/?${query}`,
           { withCredentials: true }
         );
         setInvoices(res.data);
@@ -37,7 +37,7 @@ function InvoiceList({ onEditInvoice }) {
     if (!window.confirm('Are you sure you want to delete this invoice?')) return;
     try {
       await axios.delete(
-        `https://isnad-backend-1.onrender.com/api/invoices/${id}/delete/`,
+        `https://api.isnadinvoice.com.ng/api/invoices/${id}/delete/`,
         { withCredentials: true }
       );
       setInvoices(invoices.filter(inv => inv.id !== id));
@@ -50,7 +50,7 @@ function InvoiceList({ onEditInvoice }) {
   const handleDownload = async (id, type) => {
     try {
       const res = await axios.get(
-        `https://isnad-backend-1.onrender.com/api/invoices/${id}/download-${type}/`,
+        `https://api.isnadinvoice.com.ng/api/invoices/${id}/download-${type}/`,
         { responseType: 'blob', withCredentials: true }
       );
       const url = window.URL.createObjectURL(new Blob([res.data]));
