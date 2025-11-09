@@ -19,9 +19,14 @@ function InvoiceList({ onEditInvoice }) {
           `https://api.isnadinvoice.com.ng/api/invoices/?${query}`,
           { withCredentials: true }
         );
-        setInvoices(res.data);
+        // Ensure total is numeric
+        const cleanedInvoices = res.data.map(inv => ({
+          ...inv,
+          total: parseFloat(inv.total) || 0
+        }));
+        setInvoices(cleanedInvoices);
       } catch (err) {
-        console.error(err.response || err);
+        console.error(err.response?.data || err);
         alert('Error fetching invoices');
       }
     };
@@ -34,6 +39,7 @@ function InvoiceList({ onEditInvoice }) {
   };
 
   const handleDelete = async (id) => {
+    if (!id) return;
     if (!window.confirm('Are you sure you want to delete this invoice?')) return;
     try {
       await axios.delete(
@@ -42,12 +48,13 @@ function InvoiceList({ onEditInvoice }) {
       );
       setInvoices(invoices.filter(inv => inv.id !== id));
     } catch (err) {
-      console.error(err.response || err);
+      console.error(err.response?.data || err);
       alert('Error deleting invoice');
     }
   };
 
   const handleDownload = async (id, type) => {
+    if (!id || !type) return;
     try {
       const res = await axios.get(
         `https://api.isnadinvoice.com.ng/api/invoices/${id}/download-${type}/`,
@@ -61,7 +68,7 @@ function InvoiceList({ onEditInvoice }) {
       link.click();
       link.remove();
     } catch (err) {
-      console.error(err.response || err);
+      console.error(err.response?.data || err);
       alert(`Error downloading ${type.toUpperCase()}`);
     }
   };
@@ -140,10 +147,30 @@ function InvoiceList({ onEditInvoice }) {
                 <td>{inv.invoice_date}</td>
                 <td>₦{inv.total.toLocaleString()}</td>
                 <td>
-                  <button className="btn btn-success btn-sm me-1" onClick={() => handleDownload(inv.id, 'pdf')}>PDF</button>
-                  <button className="btn btn-info btn-sm text-white me-1" onClick={() => handleDownload(inv.id, 'docx')}>DOCX</button>
-                  <button className="btn btn-warning btn-sm me-1" onClick={() => onEditInvoice(inv)}>Edit</button>
-                  <button className="btn btn-danger btn-sm" onClick={() => handleDelete(inv.id)}>Delete</button>
+                  <button
+                    className="btn btn-success btn-sm me-1"
+                    onClick={() => handleDownload(inv.id, 'pdf')}
+                  >
+                    PDF
+                  </button>
+                  <button
+                    className="btn btn-info btn-sm text-white me-1"
+                    onClick={() => handleDownload(inv.id, 'docx')}
+                  >
+                    DOCX
+                  </button>
+                  <button
+                    className="btn btn-warning btn-sm me-1"
+                    onClick={() => onEditInvoice(inv)}
+                  >
+                    Edit
+                  </button>
+                  <button
+                    className="btn btn-danger btn-sm"
+                    onClick={() => handleDelete(inv.id)}
+                  >
+                    Delete
+                  </button>
                 </td>
               </tr>
             ))

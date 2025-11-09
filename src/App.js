@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import axios from 'axios';
 import 'bootstrap/dist/css/bootstrap.min.css';
-import InvoiceList from './InvoiceList'; 
+import InvoiceList from './InvoiceList';
 
 function App() {
   const initialInvoice = {
@@ -23,10 +23,19 @@ function App() {
   const handleChange = (e, index = null, field = null) => {
     if (index !== null && field !== null) {
       const newItems = [...invoice.items];
-      newItems[index][field] = e.target.value;
+      newItems[index][field] =
+        field === 'qty' || field === 'unit_rate'
+          ? parseFloat(e.target.value) || 0
+          : e.target.value;
       setInvoice({ ...invoice, items: newItems });
     } else {
-      setInvoice({ ...invoice, [e.target.name]: e.target.value });
+      setInvoice({
+        ...invoice,
+        [e.target.name]:
+          e.target.name === 'vat' || e.target.name === 'wht'
+            ? parseFloat(e.target.value) || 0
+            : e.target.value
+      });
     }
   };
 
@@ -47,24 +56,24 @@ function App() {
 
   const grandTotal = () => {
     const total = calculateTotal();
-    const vat = parseFloat(invoice.vat || 0);
-    const wht = parseFloat(invoice.wht || 0);
-    return total + vat - wht;
+    return total + (parseFloat(invoice.vat) || 0) - (parseFloat(invoice.wht) || 0);
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+
+    // Log invoice before sending
+    console.log('Submitting invoice:', invoice);
+
     try {
       let res;
       if (invoice.id) {
-        // Update existing invoice
         res = await axios.put(
           `https://api.isnadinvoice.com.ng/api/invoices/${invoice.id}/update/`,
           invoice,
           { withCredentials: true }
         );
       } else {
-        // Create new invoice
         res = await axios.post(
           'https://api.isnadinvoice.com.ng/api/invoices/create/',
           invoice,
@@ -76,8 +85,8 @@ function App() {
       setSavedInvoice({ id: res.data.invoice_id, invoice_no: res.data.invoice_no });
       setInvoice(initialInvoice);
     } catch (err) {
-      console.error(err.response || err);
-      alert('Error saving invoice');
+      console.error(err.response?.data || err);
+      alert('Error saving invoice. Check console for details.');
     }
   };
 
@@ -96,7 +105,7 @@ function App() {
       link.click();
       link.remove();
     } catch (err) {
-      console.error(err.response || err);
+      console.error(err.response?.data || err);
       alert(`Error downloading ${type.toUpperCase()}`);
     }
   };
@@ -106,7 +115,6 @@ function App() {
     setSavedInvoice(null);
   };
 
-  // Pre-fill form when editing an invoice from the list
   const handleEditInvoice = (inv) => {
     setInvoice({
       id: inv.id,
@@ -116,9 +124,13 @@ function App() {
       po_no: inv.po_no,
       invoice_date: inv.invoice_date,
       vat_date: inv.vat_date,
-      vat: inv.vat,
-      wht: inv.wht,
-      items: inv.items.length ? inv.items : [{ description: '', unit: '', qty: 1, unit_rate: 0 }]
+      vat: parseFloat(inv.vat) || 0,
+      wht: parseFloat(inv.wht) || 0,
+      items: inv.items.length ? inv.items.map(item => ({
+        ...item,
+        qty: parseFloat(item.qty) || 0,
+        unit_rate: parseFloat(item.unit_rate) || 0
+      })) : [{ description: '', unit: '', qty: 1, unit_rate: 0 }]
     });
     setSavedInvoice({ id: inv.id, invoice_no: inv.invoice_no });
     window.scrollTo({ top: 0, behavior: 'smooth' });
