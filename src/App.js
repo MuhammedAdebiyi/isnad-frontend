@@ -69,13 +69,13 @@ function App() {
       let res;
       if (invoice.id) {
         res = await axios.put(
-          `https://api.isnadinvoice.com.ng/api/invoices/${invoice.id}/update/`,
+          `https://isnad-backend-1.onrender.com/api/invoices/${invoice.id}/update/`,
           invoice,
           { withCredentials: true }
         );
       } else {
         res = await axios.post(
-          'https://api.isnadinvoice.com.ng/api/invoices/create/',
+          'https://isnad-backend-1.onrender.com/api/invoices/create/',
           invoice,
           { withCredentials: true }
         );
@@ -94,7 +94,7 @@ function App() {
     if (!savedInvoice) return;
     try {
       const res = await axios.get(
-        `https://api.isnadinvoice.com.ng/api/invoices/${savedInvoice.id}/download-${type}/`,
+        `https://isnad-backend-1.onrender.com/api/invoices/${savedInvoice.id}/download-${type}/`,
         { responseType: 'blob', withCredentials: true }
       );
       const url = window.URL.createObjectURL(new Blob([res.data]));
