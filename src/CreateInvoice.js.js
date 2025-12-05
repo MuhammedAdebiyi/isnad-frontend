@@ -1,10 +1,20 @@
-// App.js
 import React, { useState } from 'react';
-import axios from 'axios';
+import api from './api';
 import 'bootstrap/dist/css/bootstrap.min.css';
+import Login from './Login';
+import InvoiceList from './InvoiceList';
 
-function App() {
+function Main() {
+  const [loggedIn, setLoggedIn] = useState(!!localStorage.getItem('access_token'));
+
+  const handleLogout = () => {
+    localStorage.removeItem('access_token');
+    localStorage.removeItem('refresh_token');
+    window.location.reload();
+  };
+
   const initialInvoice = {
+    id: null,
     customer_name: '',
     customer_address: '',
     contract_no: '',
@@ -22,10 +32,19 @@ function App() {
   const handleChange = (e, index = null, field = null) => {
     if (index !== null && field !== null) {
       const newItems = [...invoice.items];
-      newItems[index][field] = e.target.value;
+      newItems[index][field] =
+        field === 'qty' || field === 'unit_rate'
+          ? parseFloat(e.target.value) || 0
+          : e.target.value;
       setInvoice({ ...invoice, items: newItems });
     } else {
-      setInvoice({ ...invoice, [e.target.name]: e.target.value });
+      setInvoice({
+        ...invoice,
+        [e.target.name]:
+          e.target.name === 'vat' || e.target.name === 'wht'
+            ? parseFloat(e.target.value) || 0
+            : e.target.value
+      });
     }
   };
 
@@ -46,35 +65,43 @@ function App() {
 
   const grandTotal = () => {
     const total = calculateTotal();
-    const vat = parseFloat(invoice.vat || 0);
-    const wht = parseFloat(invoice.wht || 0);
-    return total + vat - wht;
+    return total + (parseFloat(invoice.vat) || 0) - (parseFloat(invoice.wht) || 0);
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      const res = await axios.post('http://isnad-backend-1.onrender.com/api/invoices/create/', invoice);
+      let res;
+      if (invoice.id) {
+        res = await api.put(`/api/invoices/${invoice.id}/update/`, invoice, { withCredentials: true });
+      } else {
+        res = await api.post('/api/invoices/create/', invoice, { withCredentials: true });
+      }
       alert(`Invoice ${res.data.invoice_no} saved!`);
       setSavedInvoice({ id: res.data.invoice_id, invoice_no: res.data.invoice_no });
+      setInvoice(initialInvoice);
     } catch (err) {
-      console.error(err);
-      alert('Error saving invoice');
+      console.error(err.response?.data || err);
+      alert('Error saving invoice. Check console for details.');
     }
   };
 
   const handleDownload = async (type) => {
     if (!savedInvoice) return;
     try {
-      const url = `http://isnad-backend-1.onrender.com/api/invoices/${savedInvoice.id}/download-${type}/`;
-      const res = await axios.get(url, { responseType: 'blob' });
+      const res = await api.get(`/api/invoices/${savedInvoice.id}/download-${type}/`, {
+        responseType: 'blob',
+        withCredentials: true
+      });
+      const url = window.URL.createObjectURL(new Blob([res.data]));
       const link = document.createElement('a');
-      link.href = window.URL.createObjectURL(new Blob([res.data]));
+      link.href = url;
       link.setAttribute('download', `${savedInvoice.invoice_no}.${type}`);
       document.body.appendChild(link);
       link.click();
+      link.remove();
     } catch (err) {
-      console.error(err);
+      console.error(err.response?.data || err);
       alert(`Error downloading ${type.toUpperCase()}`);
     }
   };
@@ -84,11 +111,39 @@ function App() {
     setSavedInvoice(null);
   };
 
+  const handleEditInvoice = (inv) => {
+    setInvoice({
+      id: inv.id,
+      customer_name: inv.customer_name,
+      customer_address: inv.customer_address,
+      contract_no: inv.contract_no,
+      po_no: inv.po_no,
+      invoice_date: inv.invoice_date,
+      vat_date: inv.vat_date,
+      vat: parseFloat(inv.vat) || 0,
+      wht: parseFloat(inv.wht) || 0,
+      items: inv.items.length
+        ? inv.items.map((item) => ({
+            ...item,
+            qty: parseFloat(item.qty) || 0,
+            unit_rate: parseFloat(item.unit_rate) || 0
+          }))
+        : [{ description: '', unit: '', qty: 1, unit_rate: 0 }]
+    });
+    setSavedInvoice({ id: inv.id, invoice_no: inv.invoice_no });
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  if (!loggedIn) {
+    return <Login onLogin={() => setLoggedIn(true)} />;
+  }
+
   return (
     <div className="container my-5">
-      <div className="card shadow">
+      <button className="btn btn-danger mb-3" onClick={handleLogout}>Logout</button>
+      <div className="card shadow mb-5">
         <div className="card-header bg-primary text-white d-flex justify-content-between align-items-center">
-          <h2 className="mb-0">Create Invoice</h2>
+          <h2 className="mb-0">{invoice.id ? 'Edit Invoice' : 'Create Invoice'}</h2>
           {savedInvoice && <h5 className="mb-0">Invoice No: {savedInvoice.invoice_no}</h5>}
         </div>
         <div className="card-body">
@@ -256,7 +311,7 @@ function App() {
                 Add Item
               </button>
               <button type="submit" className="btn btn-primary">
-                Save Invoice
+                {invoice.id ? 'Update Invoice' : 'Save Invoice'}
               </button>
               <button type="button" className="btn btn-warning" onClick={resetForm}>
                 New Invoice
@@ -283,8 +338,11 @@ function App() {
           </form>
         </div>
       </div>
+
+      {/* Invoice List */}
+      <InvoiceList onEditInvoice={handleEditInvoice} />
     </div>
   );
 }
 
-export default App;
+export default Main;

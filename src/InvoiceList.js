@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import axios from 'axios';
+import api from './api';
 
 function InvoiceList({ onEditInvoice }) {
   const [invoices, setInvoices] = useState([]);
@@ -15,11 +15,7 @@ function InvoiceList({ onEditInvoice }) {
     const fetchInvoices = async () => {
       try {
         const query = new URLSearchParams(filters).toString();
-        const res = await axios.get(
-          `https://isnad-backend-1.onrender.com/api/invoices/?${query}`,
-          { withCredentials: true }
-        );
-        // Ensure total is numeric
+        const res = await api.get(`/api/invoices/?${query}`);
         const cleanedInvoices = res.data.map(inv => ({
           ...inv,
           total: parseFloat(inv.total) || 0
@@ -42,10 +38,7 @@ function InvoiceList({ onEditInvoice }) {
     if (!id) return;
     if (!window.confirm('Are you sure you want to delete this invoice?')) return;
     try {
-      await axios.delete(
-        `https://isnad-backend-1.onrender.com/api/invoices/${id}/delete/`,
-        { withCredentials: true }
-      );
+      await api.delete(`/api/invoices/${id}/delete/`);
       setInvoices(invoices.filter(inv => inv.id !== id));
     } catch (err) {
       console.error(err.response?.data || err);
@@ -56,10 +49,10 @@ function InvoiceList({ onEditInvoice }) {
   const handleDownload = async (id, type) => {
     if (!id || !type) return;
     try {
-      const res = await axios.get(
-        `https://isnad-backend-1.onrender.com/api/invoices/${id}/download-${type}/`,
-        { responseType: 'blob', withCredentials: true }
-      );
+      const res = await api.get(`/api/invoices/${id}/download-${type}/`, {
+        responseType: "blob"
+    });
+ 
       const url = window.URL.createObjectURL(new Blob([res.data]));
       const link = document.createElement('a');
       link.href = url;
